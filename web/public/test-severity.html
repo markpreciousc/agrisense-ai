@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head><title>Severity Model Load Test</title></head>
+<body>
+<canvas id="output" width="128" height="128" style="border:1px solid #000; image-rendering: pixelated; width:256px; height:256px;"></canvas>
+<div id="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script>
+async function run() {
+  const model = await tf.loadGraphModel('/models/severity/model.json');
+  document.getElementById('status').innerText = 'Model loaded: ' + model.inputs[0].shape;
+
+  const input = tf.randomUniform([1, 128, 128, 3], 0, 1);
+  const output = model.predict(input);
+  document.getElementById('status').innerText += ` | Output shape: [${output.shape}]`;
+
+  const squeezed = output.squeeze([0, 3]); // drop batch and channel dims for display
+  await tf.browser.toPixels(squeezed, document.getElementById('output'));
+}
+run().catch(e => {
+  document.getElementById('status').innerText = 'Error: ' + e.message;
+  console.error(e);
+});
+</script>
+</body>
+</html>

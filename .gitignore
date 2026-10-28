@@ -1,0 +1,22 @@
+# Python environments (large, can be rebuilt)
+tfjs_venv/
+ml/venv/
+ml/tfjs_venv/
+**/__pycache__/
+.ipynb_checkpoints/
+
+# Trained model files (large; the deployable copies are in web/public/models)
+ml/models/
+
+# Secrets and local certificates
+.env*
+!.env.example
+*.pem
+kaggle.json
+
+# Build output and caches
+web/.next/
+.vercel/
+
+# Whisper download cache
+web/public/models/whisper/.cache/ml/data/

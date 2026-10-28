@@ -1,0 +1,7 @@
+venv/
+data/raw/
+data/processed/
+*.h5
+*.keras
+__pycache__/
+.ipynb_checkpoints/

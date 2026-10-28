@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><title>Model Load Test</title></head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script>
+async function run() {
+  const model = await tf.loadGraphModel('/models/classifier/model.json');
+  console.log('Model loaded:', model);
+
+  const input = tf.randomUniform([1, 224, 224, 3], 0, 255);
+  const output = model.predict(input);
+  output.print();
+
+  const probs = await output.data();
+  const maxProb = Math.max(...probs);
+  document.body.innerText = `Model loaded and ran. Output shape: [${output.shape}]. Max probability: ${maxProb.toFixed(4)}`;
+}
+run().catch(e => {
+  document.body.innerText = 'Error: ' + e.message;
+  console.error(e);
+});
+</script>
+</body>
+</html>

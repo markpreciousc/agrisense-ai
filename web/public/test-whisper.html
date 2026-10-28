@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head><title>Whisper Test</title></head>
+<body>
+<button id="recordBtn">Start Recording</button>
+<div id="status">Idle</div>
+<div id="transcript"></div>
+
+<script type="module">
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@latest';
+
+env.allowLocalModels = true;
+env.allowRemoteModels = false;  // hard block any CDN fallback — proves it's genuinely offline-capable
+env.localModelPath = '/models/';
+
+const statusEl = document.getElementById('status');
+const transcriptEl = document.getElementById('transcript');
+const btn = document.getElementById('recordBtn');
+
+let transcriber = null;
+let mediaRecorder = null;
+let audioChunks = [];
+
+async function loadModel() {
+  statusEl.innerText = 'Loading Whisper-tiny model (first time only, several MB)...';
+  transcriber = await pipeline('automatic-speech-recognition', 'whisper', {
+    dtype: {
+      encoder_model: 'q8',           
+      decoder_model_merged: 'fp32'   
+    }
+  });
+  statusEl.innerText = 'Model loaded. Ready to record.';
+}
+
+async function transcribeAudio(audioBlob) {
+  statusEl.innerText = 'Transcribing...';
+  const arrayBuffer = await audioBlob.arrayBuffer();
+  const audioContext = new AudioContext({ sampleRate: 16000 });
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  const audioData = audioBuffer.getChannelData(0);
+
+  const result = await transcriber(audioData);
+  transcriptEl.innerText = 'Transcript: ' + result.text;
+  statusEl.innerText = 'Done. Ready to record again.';
+}
+
+btn.addEventListener('click', async () => {
+  try {
+    if (!transcriber) await loadModel();
+
+    if (btn.innerText === 'Start Recording') {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+        try {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          await transcribeAudio(audioBlob);
+        } catch (err) {
+          statusEl.innerText = 'Error: ' + err.message;
+          console.error(err);
+        }
+      };
+      mediaRecorder.start();
+      btn.innerText = 'Stop Recording';
+      statusEl.innerText = 'Recording... speak now';
+    } else {
+      mediaRecorder.stop();
+      btn.innerText = 'Start Recording';
+    }
+  } catch (err) {
+    statusEl.innerText = 'Error: ' + err.message;
+    console.error(err);
+  }
+});
+</script>
+</body>
+</html>
